@@ -1,11 +1,28 @@
 import pprint
+from threading import Thread
 
+import time
 from slackclient import SlackClient
 from lib.config import Config
+from lib.slack_client.rtmclient import SlackRTMClient
 
 
+class SlackApiClientBackgroundThread:
+    """
+    this class will be used for periodic background tasks.
+    currently just a stub
+    """
+    def __init__(self, slackclient):
+        self.slackclient = slackclient
+        self._continue = None
+        self.thread = Thread(target=self.mainloop)
 
-class Client:
+    def mainloop(self):
+        while self._continue:
+            pass
+
+
+class SlackApiClient:
     PUBLIC = 'public_channel'
     PRIVATE = 'private_channel'
     IM = 'im'
@@ -18,12 +35,18 @@ class Client:
         self.users = {}
         self.refresh_user_list()
         self.refresh_channel_list()
+        self.background_thread = None
 
     def refresh_channel_list(self):
-        channels = self.get_active_channels()
+        channels = self.get_my_channels(_type=self.PUBLIC)
+        channels.sort(key=lambda c: c.name)
         self.channels = {str(c.id): c for c in channels}
         private_channels = self.get_my_channels(_type=self.PRIVATE)
+        private_channels.sort(key=lambda c: c.name)
         self.channels.update({str(c.id): c for c in private_channels})
+        im_channels = self.get_my_channels(_type=self.IM)
+        im_channels.sort(key=lambda c: c.name)
+        self.channels.update({str(c.id): c for c in im_channels})
 
     def get_my_channels(self, _type=None):
         channels = {}
@@ -54,13 +77,17 @@ class Client:
         if response.get('ok'):
             return [User(r) for r in response.get('members')]
 
+    def rtm_connect(self) -> str:
+        response = self.slackclient.api_call('rtm.connect')
+        if response.get('ok'):
+            return response.get('url')
 
 
 class Channel:
     def __init__(self, client, **kwargs):
         self.client = client
         self.id = kwargs.get('id')
-        self.name = kwargs.get('name')
+        self.name = kwargs.get('name') or self.client.users.get(kwargs.get('user')).name
         self.is_channel = kwargs.get('is_channel')
         self.created = kwargs.get('created')
         self.is_archived = kwargs.get('is_archived')
@@ -78,6 +105,12 @@ class Channel:
         self.purpose = kwargs.get('purpose')
         self.previous_names = kwargs.get('previous_names')
         self.num_members = kwargs.get('num_members')
+        self.last_seen_ts = 0
+        self.has_unread = False
+
+    def register_ts(self, ts):
+        if float(ts) > float(self.last_seen_ts):
+            self.has_unread = True
 
     def get_info(self):
         return self.client.slackclient.api_call('channels.info', channel=self.id)
@@ -90,27 +123,27 @@ class Channel:
 
     def post_message(self, msg: str, thread_ts=None, reply_broadcast=False):
         return self.client.slackclient.api_call('chat.postMessage',
-                                         channel=self.id,
-                                         text=msg,
-                                         as_user=True,
-                                         thread_ts=thread_ts,
-                                         reply_broadcast=reply_broadcast)
+                                                channel=self.id,
+                                                text=msg,
+                                                as_user=True,
+                                                thread_ts=thread_ts,
+                                                reply_broadcast=reply_broadcast)
 
     def post_ephemeral_message(self, msg:str, user: str):
         return self.client.slackclient.api_call('chat.postEphemeral',
-                                         channel=self.id,
-                                         text=msg,
-                                         user=user)
+                                                channel=self.id,
+                                                text=msg,
+                                                user=user)
 
     def delete_message(self, msg_ts):
         return self.client.slackclient.api_call('chat.delete',
-                                         channel=self.id,
-                                         ts=msg_ts)
+                                                channel=self.id,
+                                                ts=msg_ts)
 
     def fetch_messages(self):
         response = self.client.slackclient.api_call('conversations.history',
-                                             channel=self.id,
-                                             count=200)
+                                                    channel=self.id,
+                                                    count=200)
         if response.get('ok'):
             return [Message(self.client, **message) for message in response.get('messages')]
 
@@ -123,11 +156,14 @@ class Channel:
 class Message:
     def __init__(self, client, **kwargs):
         self.client = client
+        self.channel = self.client.channels.get(kwargs.get('channel'))
         self.user = client.users.get(kwargs.get('user'))
         self.text = kwargs.get('text')
         self.type = kwargs.get('type')
         self.subtype = kwargs.get('subtype')
         self.ts = kwargs.get('ts')
+        if self.channel:
+            self.channel.register_ts(self.ts)
 
     def to_format_dict(self):
         return dict(
@@ -155,8 +191,13 @@ class User:
 
 
 if __name__ == '__main__':
+    """
+    this is just a dummy testing stub. not executed when ran from cli
+    """
+
+    print = pprint.pprint
     config = Config()
-    client = Client(config)
+    client = SlackApiClient(config)
 
     #client.refresh_channel_list()
     #print(client.channels)
@@ -164,5 +205,14 @@ if __name__ == '__main__':
 
     #client.refresh_user_list()
     #print(client.users)
-    client.refresh_channel_list()
-    pprint.pprint(list(client.channels.values()))
+
+    rtm_url = client.rtm_connect()
+    rtm_client = SlackRTMClient(rtm_url, print)
+    rtm_client.start()
+    while True:
+        time.sleep(10)
+        pass
+
+
+
+

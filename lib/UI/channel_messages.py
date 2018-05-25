@@ -41,12 +41,16 @@ class BoxedChannelMessages(npyscreen.BoxTitle):
     def set_channel(self, ch):
         new_name = "Messages | {name}".format(name=ch.name)
 
-        purpose = ch.purpose.get('value')
-        if purpose:
-            new_name += " ({})".format(purpose)
+        if ch.topic:
+            topic = ch.topic.get('value')
+        else:
+            topic = ch.purpose.get('value')
+        if topic:
+            new_name += " ({})".format(topic)
 
         if ch.is_private:
             new_name += " [PRIVATE]"
 
         self.name = new_name
+
 

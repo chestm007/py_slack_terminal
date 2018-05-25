@@ -6,7 +6,14 @@ class ChannelSelector(npyscreen.MultiLine):
         super(ChannelSelector, self).__init__(*args, **kwargs)
 
     def display_value(self, vl):
-        return vl.name
+        prefix = '*' if vl.has_unread else ' '
+        if vl.is_private:
+            prefix += ' <>'
+        elif vl.is_channel:
+            prefix += '  #'
+        else:
+            prefix += '  @'
+        return prefix + vl.name
 
     def h_select(self, ch):
         """
@@ -24,5 +31,8 @@ class BoxedChannelSelector(npyscreen.BoxTitle):
     def __init__(self, *args, **kwargs):
         self.name = 'Channels'
         super(BoxedChannelSelector, self).__init__(*args, **kwargs)
+
+    def update_channels(self, in_channels):
+        self.values = in_channels
 
 

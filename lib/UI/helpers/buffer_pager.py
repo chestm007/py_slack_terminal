@@ -12,7 +12,12 @@ class BufferPager(npyscreen.Pager):
 
     def buffer(self, lines, scroll_end=True, scroll_if_editing=False):
         "Add data to be displayed in the buffer."
-        self.values.extend(lines)
+        op = self.values.append
+        if type(lines) == list:
+            for line in lines:
+                op(line)
+        else:
+            op(lines)
         if scroll_end:
             if not self.editing:
                 self.start_display_at = len(self.values) - len(self._my_widgets)
