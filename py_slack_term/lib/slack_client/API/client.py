@@ -1,12 +1,6 @@
-import pprint
-import time
-
-from ....lib import Config
 from .channel import Channel
 from .user import User
 from slackclient import SlackClient
-
-from py_slack_term.lib.slack_client.RTM import SlackRTMClient
 
 
 class SlackApiClient:
