@@ -1,25 +1,8 @@
 import pprint
-from threading import Thread
-
 import time
 from slackclient import SlackClient
 from lib.config import Config
 from lib.slack_client.rtmclient import SlackRTMClient
-
-
-class SlackApiClientBackgroundThread:
-    """
-    this class will be used for periodic background tasks.
-    currently just a stub
-    """
-    def __init__(self, slackclient):
-        self.slackclient = slackclient
-        self._continue = None
-        self.thread = Thread(target=self.mainloop)
-
-    def mainloop(self):
-        while self._continue:
-            pass
 
 
 class SlackApiClient:
@@ -35,7 +18,6 @@ class SlackApiClient:
         self.users = {}
         self.refresh_user_list()
         self.refresh_channel_list()
-        self.background_thread = None
 
     def refresh_channel_list(self):
         channels = self.get_my_channels(_type=self.PUBLIC)
