@@ -95,7 +95,9 @@ class Channel:
             self.has_unread = True
 
     def get_info(self):
-        return self.client.slackclient.api_call('channels.info', channel=self.id)
+        response = self.client.slackclient.api_call('channels.info', channel=self.id)
+        if response.get('ok'):
+            return response.get('group')
 
     def join(self):
         return self.client.slackclient.api_call('channels.join', channel=self.id)
