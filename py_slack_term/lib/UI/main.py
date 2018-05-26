@@ -1,11 +1,11 @@
 import npyscreen
+from ...lib import Logger
+from ...lib.UI.widgets import BoxedChannelMessages
+from ...lib.UI.widgets import BoxedChannelSelector
+from ...lib.UI.widgets import BoxedMessageComposer
+from ...lib.slack_client.API import Message
 
-from lib.UI.widgets import BoxedChannelMessages
-from lib.UI.widgets import BoxedChannelSelector
-from lib.UI.widgets import BoxedMessageComposer
-from lib import Logger
-from lib.slack_client.API import Message
-from lib.slack_client.RTM import SlackRTMClient
+from py_slack_term.lib.slack_client.RTM import SlackRTMClient
 
 
 class SlackWindowForm(npyscreen.FormBaseNew):

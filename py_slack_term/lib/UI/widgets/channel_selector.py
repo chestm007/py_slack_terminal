@@ -1,6 +1,6 @@
 import npyscreen
 
-from lib.slack_client.API import Channel
+from ....lib.slack_client.API import Channel
 
 
 class ChannelSelector(npyscreen.MultiLine):

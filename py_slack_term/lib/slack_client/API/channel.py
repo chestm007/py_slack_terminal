@@ -1,4 +1,4 @@
-from lib.slack_client.API.message import Message
+from .message import Message
 
 
 class Channel:

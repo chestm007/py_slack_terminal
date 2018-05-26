@@ -1,6 +1,7 @@
-from lib.UI import SlackApplication
-from lib import Config
-from lib.slack_client.API import SlackApiClient
+from .lib import Config
+from .lib.UI import SlackApplication
+
+from py_slack_term.lib.slack_client.API import SlackApiClient
 
 
 def main():

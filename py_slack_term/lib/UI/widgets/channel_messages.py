@@ -1,8 +1,8 @@
-import npyscreen
 import re
-import textwrap
 
-from lib.slack_client.API import Channel, Message
+import npyscreen
+
+from ....lib.slack_client.API import Channel, Message
 
 
 class ChannelMessages(npyscreen.BufferPager):
