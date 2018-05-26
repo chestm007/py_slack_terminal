@@ -4,7 +4,7 @@ from setuptools import find_packages
 
 setup(
     name='py_slack_term',
-    version='0.1.3',
+    version='0.1.4',
     packages=find_packages(),
     url='https://github.com/chestm007/py_slack_terminal',
     license='GPL-2.0',
