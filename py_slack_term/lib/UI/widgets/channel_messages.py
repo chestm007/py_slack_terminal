@@ -1,3 +1,4 @@
+import curses
 import re
 
 import npyscreen
@@ -12,7 +13,6 @@ class ChannelMessages(npyscreen.BufferPager):
 
     def __init__(self, *args, **kwargs):
         super(ChannelMessages, self).__init__(*args, **kwargs)
-        self.editable = False
         self.autowrap = True
 
     def display_value(self, vl: Message) -> str:
@@ -75,6 +75,13 @@ class ChannelMessages(npyscreen.BufferPager):
         # There is a bug somewhere that affects the first line.  This cures it.
         # Without this line, the first line inherits the color of the form when not editing. Not clear why.
         self._my_widgets[0].update()
+
+    def set_up_handlers(self):
+        super(ChannelMessages, self).set_up_handlers()
+        self.handlers.update({
+            curses.KEY_LEFT: self.h_exit_left,
+            curses.KEY_RIGHT: self.h_exit_right
+        })
 
 
 class BoxedChannelMessages(npyscreen.BoxTitle):

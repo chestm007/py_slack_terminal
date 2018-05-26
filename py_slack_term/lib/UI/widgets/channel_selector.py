@@ -1,3 +1,5 @@
+import curses
+
 import npyscreen
 
 from ....lib.slack_client.API import Channel
@@ -25,6 +27,13 @@ class ChannelSelector(npyscreen.MultiLine):
         """
         super(ChannelSelector, self).h_select(ch)
         self.parent.select_channel(self.values[self.value])
+
+    def set_up_handlers(self):
+        super(ChannelSelector, self).set_up_handlers()
+        self.handlers.update({
+            curses.KEY_RIGHT: self.h_exit_right,
+            curses.KEY_LEFT: self.h_exit_left
+        })
 
 
 class BoxedChannelSelector(npyscreen.BoxTitle):
