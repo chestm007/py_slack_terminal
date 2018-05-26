@@ -17,14 +17,18 @@ class ChannelMessages(npyscreen.BufferPager):
     def display_value(self, vl: Message) -> str:
         if isinstance(vl, Message):
             message_dict = vl.to_format_dict()
-            match = re.search(self.mention_regex, message_dict.get('text'))
-            if match:
-                user_id = match.group().replace('<', '').replace('@', '').replace('>', '')
-                message_dict['text'] = message_dict.get('text').replace(match.group(),
-                                                                    '@' + vl.client.users.get(user_id).get_name())
-            return self.message_format.format(**message_dict)
-        else:
-            return vl
+            try:
+                text = str(message_dict.get('text'))
+            except:
+                pass
+            if text:
+                match = re.search(self.mention_regex, text)
+                if match:
+                    user_id = match.group().replace('<', '').replace('@', '').replace('>', '')
+                    message_dict['text'] = message_dict.get('text').replace(match.group(),
+                                                                        '@' + vl.client.users.get(user_id).get_name())
+                return self.message_format.format(**message_dict)
+        return vl
 
     def display(self, *args, **kwargs):
         super(ChannelMessages, self).display(*args, **kwargs)
