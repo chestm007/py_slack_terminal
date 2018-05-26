@@ -1,6 +1,7 @@
 import re
 
 import npyscreen
+from npyscreen.wgmultiline import MORE_LABEL
 
 from ....lib.slack_client.API import Channel, Message
 
@@ -17,21 +18,18 @@ class ChannelMessages(npyscreen.BufferPager):
     def display_value(self, vl: Message) -> str:
         if isinstance(vl, Message):
             message_dict = vl.to_format_dict()
-            try:
-                text = str(message_dict.get('text'))
-            except:
-                pass
-            if text:
+            text = str(message_dict.get('text'))
+            if text is not None:
                 match = re.search(self.mention_regex, text)
                 if match:
                     user_id = match.group().replace('<', '').replace('@', '').replace('>', '')
                     message_dict['text'] = message_dict.get('text').replace(match.group(),
                                                                         '@' + vl.client.users.get(user_id).get_name())
                 return self.message_format.format(**message_dict)
-        return vl
-
-    def display(self, *args, **kwargs):
-        super(ChannelMessages, self).display(*args, **kwargs)
+        # there should only be Message objects passed into here, SOMEHOW we sometimes dont get one
+        # or its 'text' attribute is "none"
+        # TODO: this is a hack, needs investigation
+        return str(vl)
 
     def clear_buffer(self, *args, **kwargs):
         """
@@ -88,6 +86,7 @@ class BoxedChannelMessages(npyscreen.BoxTitle):
 
     def buffer(self, *args, **kwargs) -> None:
         self.entry_widget.buffer(*args, **kwargs)
+        self.display()
 
     def clear_buffer(self, *args, **kwargs) -> None:
         self.entry_widget.clear_buffer(*args, **kwargs)

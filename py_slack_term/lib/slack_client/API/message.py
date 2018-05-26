@@ -3,7 +3,7 @@ class Message:
         self.client = client
         self.channel = self.client.channels.get(kwargs.get('channel'))
         self.user = client.users.get(kwargs.get('user'))
-        self.text = kwargs.get('text')
+        self.text = kwargs.get('text') or ''
         self.type = kwargs.get('type')
         self.subtype = kwargs.get('subtype')
         self.ts = kwargs.get('ts')
@@ -12,7 +12,7 @@ class Message:
 
     def to_format_dict(self):
         return dict(
-            user=self.user,
+            user=' ' if self.subtype == 'bot_message' else self.user,
             text=self.text,
             type=self.type,
             subtype=self.subtype,

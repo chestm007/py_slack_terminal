@@ -15,11 +15,8 @@ class SlackRTMClient:
         self.wst.start()
 
     def on_message(self, _, message):
-        try:
-            data = json.loads(message)
-            self.callback(data)
-        except Exception as e:
-            print(e)
+        data = json.loads(message)
+        self.callback(data)
 
     def stop(self):
         self.ws.close()

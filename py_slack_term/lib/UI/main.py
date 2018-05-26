@@ -6,12 +6,13 @@ from ...lib.UI.widgets import BoxedMessageComposer
 from ...lib.slack_client.API import Message
 
 from py_slack_term.lib.slack_client.RTM import SlackRTMClient
+from py_slack_term.lib.slack_client.API import SlackApiClient
 
 
 class SlackWindowForm(npyscreen.FormBaseNew):
     def __init__(self, *args, slack_client=None, **kwargs):
         self.logger = Logger('SlackWindowForm')
-        self.slack_client = slack_client
+        self.slack_client = slack_client  # type: SlackApiClient
         rtm_url = self.slack_client.rtm_connect()
         super(SlackWindowForm, self).__init__(*args, **kwargs)
         self.channel_selector = None
@@ -38,11 +39,9 @@ class SlackWindowForm(npyscreen.FormBaseNew):
         self.channel_messages.buffer(list(reversed(ch.fetch_messages())))
         self.channel_messages.set_channel(ch)
         self.current_channel.has_unread = False
-        self.channel_messages.display()
 
     def refresh_channels(self):
         self.channel_selector.update_channels(self.slack_client.get_active_channels_im_in())
-        self.channel_selector.display()
 
     def send_message(self):
         message = self.message_composer.value
@@ -59,8 +58,17 @@ class SlackWindowForm(npyscreen.FormBaseNew):
                     self.channel_messages.buffer([message])
                     self.current_channel.mark(message.ts)
                 self.current_channel.has_unread = False
-        self.display()
-        self.channel_messages.display()
+                if self.channel_selector:
+                    self.channel_selector.display()
+            else:
+                message.channel
+
+        elif event_type in ('channel_marked', 'im_marked', 'group_marked'):
+            chan = self.slack_client.channels.get(event.get('channel'))
+            if chan:
+                chan.register_ts(event.get('ts'), as_read=True)
+                if self.channel_selector:
+                    self.channel_selector.display()
 
     def stop(self):
         self.rtm_client.stop()

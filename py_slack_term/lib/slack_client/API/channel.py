@@ -26,9 +26,15 @@ class Channel:
         self.last_seen_ts = 0
         self.has_unread = False
 
-    def register_ts(self, ts):
+    def register_ts(self, ts, *_, as_read=False):
         if float(ts) > float(self.last_seen_ts):
-            self.has_unread = True
+            if as_read:
+                self.last_seen_ts = float(ts)
+                self.has_unread = False
+            else:
+                self.has_unread = True
+        elif not as_read:
+            self.has_unread = False
 
     def get_info(self):
         response = self.client.slackclient.api_call('channels.info', channel=self.id)
