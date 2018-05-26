@@ -56,7 +56,7 @@ class SlackWindowForm(npyscreen.FormBaseNew):
             message = Message(self.slack_client, **event)
             if self.current_channel:
                 if event.get('channel') == str(self.current_channel.id):
-                    self.channel_messages.buffer(message)
+                    self.channel_messages.buffer([message])
                     self.current_channel.mark(message.ts)
                 self.current_channel.has_unread = False
         self.display()
