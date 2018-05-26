@@ -1,1 +1,8 @@
+os: linux
+dist: trusty
+group: stable
 language: python
+install:
+    - make build
+script:
+    - echo "todo"
