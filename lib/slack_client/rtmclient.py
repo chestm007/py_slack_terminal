@@ -1,8 +1,7 @@
 import json
+
 from threading import Thread
-
 from websocket import create_connection
-
 from lib.logger import Logger
 
 
@@ -21,16 +20,30 @@ class SlackRTMClient:
                 result = self.ws.recv()
                 response = json.loads(result)
                 self.callback(response)
+
+            except ConnectionResetError:
+                self.reconnect()
+
             except Exception as e:
-                self.logger.log(e)
+                self.logger.log(e + result)
                 pass
 
-    def start(self):
+    def reconnect(self):
+        self.disconnect()
+        self.connect()
+
+    def connect(self):
         self.ws = create_connection(self.url)
+
+    def disconnect(self):
+        self.ws.close()
+
+    def start(self):
+        self.connect()
         self._continue = True
         self.thread.start()
 
     def stop(self):
         self._continue = False
-        self.ws.close()
         self.thread.join()
+        self.disconnect()
