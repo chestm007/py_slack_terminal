@@ -145,10 +145,19 @@ class Channel:
                                                     channel=self.id,
                                                     count=200)
         if response.get('ok'):
-            return [Message(self.client, **message) for message in response.get('messages')]
+            messages = [Message(self.client, **message) for message in response.get('messages')]
+            return messages
 
     def mark(self, ts):
-        self.client.slackclient.api_call('channels.mark',
+        if self.is_private:
+            endpoint = 'groups'
+        elif self.is_channel:
+            endpoint = 'channels'
+        elif self.is_mpim:
+            endpoint = 'mpim'
+        else:
+            endpoint = 'im'
+        self.client.slackclient.api_call(endpoint + '.mark',
                                          channel=self.id,
                                          ts=ts)
 

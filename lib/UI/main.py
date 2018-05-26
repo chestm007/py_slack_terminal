@@ -37,8 +37,8 @@ class SlackWindowForm(npyscreen.FormBaseNew):
         self.channel_messages.clear_buffer()
         self.channel_messages.buffer(list(reversed(ch.fetch_messages())))
         self.channel_messages.set_channel(ch)
-        self.channel_messages.display()
         self.current_channel.has_unread = False
+        self.channel_messages.display()
 
     def refresh_channels(self):
         self.channel_selector.update_channels(self.slack_client.get_active_channels_im_in())
@@ -56,6 +56,7 @@ class SlackWindowForm(npyscreen.FormBaseNew):
             if self.current_channel:
                 if event.get('channel') == str(self.current_channel.id):
                     self.channel_messages.buffer(message)
+                    self.current_channel.mark(message.ts)
         self.channel_messages.display()
         if self.current_channel:
             self.current_channel.has_unread = False
