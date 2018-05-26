@@ -1,12 +1,17 @@
-from lib.UI.main import SlackApplication
-from lib.config import Config
-from lib.slack_client.client import SlackApiClient
+from lib.UI import SlackApplication
+from lib import Config
+from lib.slack_client.API import SlackApiClient
 
-config = Config()
-slackclient = SlackApiClient(config)
-app = SlackApplication(slack_client=slackclient)
-try:
-    app.run()
-except KeyboardInterrupt:
-    app.stop()
-    pass
+
+def main():
+    config = Config()
+    slackclient = SlackApiClient(config)
+    app = SlackApplication(slack_client=slackclient)
+    try:
+        app.run()
+    except KeyboardInterrupt:
+        app.stop()
+        pass
+
+if __name__ == "__main__":
+    main()
