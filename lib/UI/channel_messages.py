@@ -43,8 +43,10 @@ class BoxedChannelMessages(npyscreen.BoxTitle):
 
         if ch.topic:
             topic = ch.topic.get('value')
-        else:
+        elif ch.purpose:
             topic = ch.purpose.get('value')
+        else:
+            topic = None
         if topic:
             new_name += " ({})".format(topic)
 
