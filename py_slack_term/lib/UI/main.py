@@ -9,12 +9,12 @@ from py_slack_term.lib.slack_client.RTM import SlackRTMClient
 from py_slack_term.lib.slack_client.API import SlackApiClient
 
 
-class SlackWindowForm(npyscreen.FormBaseNew):
+class SlackConversationsWindowForm(npyscreen.FormBaseNew):
     def __init__(self, *args, slack_client=None, **kwargs):
         self.logger = Logger('SlackWindowForm')
         self.slack_client = slack_client  # type: SlackApiClient
         rtm_url = self.slack_client.rtm_connect()
-        super(SlackWindowForm, self).__init__(*args, **kwargs)
+        super(SlackConversationsWindowForm, self).__init__(*args, **kwargs)
         self.channel_selector = None
         self.current_channel = None
 
@@ -35,9 +35,9 @@ class SlackWindowForm(npyscreen.FormBaseNew):
 
     def select_channel(self, ch):
         self.current_channel = ch
+        self.channel_messages.set_channel(ch)
         self.channel_messages.clear_buffer()
         self.channel_messages.buffer(list(reversed(ch.fetch_messages())))
-        self.channel_messages.set_channel(ch)
         self.current_channel.has_unread = False
 
     def refresh_channels(self):
@@ -60,8 +60,6 @@ class SlackWindowForm(npyscreen.FormBaseNew):
                 self.current_channel.has_unread = False
                 if self.channel_selector:
                     self.channel_selector.display()
-            else:
-                message.channel
 
         elif event_type in ('channel_marked', 'im_marked', 'group_marked'):
             chan = self.slack_client.channels.get(event.get('channel'))
@@ -78,9 +76,12 @@ class SlackApplication(npyscreen.NPSAppManaged):
     def __init__(self, *args, slack_client=None, **kwargs):
         self.slack_client = slack_client
         super(SlackApplication, self).__init__(*args, **kwargs)
+        self.conversations_window = None
 
     def onStart(self):
-        self.main_window = self.addForm('MAIN', SlackWindowForm, name='Slack Terminal', slack_client=self.slack_client)
+        self.conversations_window = self.addForm('MAIN', SlackConversationsWindowForm,
+                                                 name='Slack Terminal',
+                                                 slack_client=self.slack_client)
 
     def stop(self):
-        self.main_window.stop()
+        self.conversations_window.stop()
