@@ -64,7 +64,3 @@ class SlackApiClient:
         if response.get('ok'):
             return response.get('url')
 
-
-
-
-

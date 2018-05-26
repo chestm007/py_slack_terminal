@@ -4,6 +4,7 @@ import re
 import npyscreen
 from npyscreen.wgmultiline import MORE_LABEL
 
+from py_slack_term.lib.slack_client.RTM.rtmclient import TypingUserWatchdogThread
 from ....lib.slack_client.API import Channel, Message
 
 
@@ -90,6 +91,9 @@ class BoxedChannelMessages(npyscreen.BoxTitle):
     def __init__(self, *args, **kwargs):
         self.name = 'Messages'
         super(BoxedChannelMessages, self).__init__(*args, **kwargs)
+        self.current_channel = None
+        self.typing_user_watchdog_thread = TypingUserWatchdogThread(channel=self.current_channel)
+
 
     def buffer(self, *args, **kwargs) -> None:
         self.entry_widget.buffer(*args, **kwargs)
@@ -102,6 +106,9 @@ class BoxedChannelMessages(npyscreen.BoxTitle):
         """
         function to set title of box to channel name and display associated information
         """
+        if ch is not None:
+            self.current_channel = ch
+
         new_name = "Messages | {name}".format(name=ch.name)
 
         if ch.topic:
@@ -117,5 +124,22 @@ class BoxedChannelMessages(npyscreen.BoxTitle):
             new_name += " [PRIVATE]"
 
         self.name = new_name
+        self.typing_user_watchdog_thread.start()
+
+    def typing_user_event(self):
+        typing_users = [u.get_name() for u in self.current_channel.typing_users.values()]
+        if len(typing_users) < 1:
+            self.footer = None
+        if len(typing_users) == 1:
+            self.footer = '{} is typing...'.format(typing_users[0])
+        elif len(typing_users) < 4:
+            self.footer = '{} and {} are typing...'.format(', '.join(typing_users[:-1]), typing_users[-1:])
+        else:
+            self.footer = 'Multiple people are typing...'
+        self.display()
+
+    def destroy(self):
+        self.typing_user_watchdog_thread.stop()
+        super(BoxedChannelMessages, self).destroy()
 
 

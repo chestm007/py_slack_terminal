@@ -68,6 +68,11 @@ class SlackConversationsWindowForm(npyscreen.FormBaseNew):
                 if self.channel_selector:
                     self.channel_selector.display()
 
+        elif event_type == 'user_typing':
+            chan = self.slack_client.channels.get(event.get('channel'))
+            user = event.get('user')
+            chan.register_typing_user(user)
+
     def stop(self):
         self.rtm_client.stop()
 

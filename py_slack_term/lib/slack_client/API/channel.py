@@ -1,3 +1,6 @@
+import time
+
+from py_slack_term.lib.slack_client.RTM.rtmclient import TypingUserWatchdogThread
 from .message import Message
 
 
@@ -25,6 +28,10 @@ class Channel:
         self.num_members = kwargs.get('num_members')
         self.last_seen_ts = 0
         self.has_unread = False
+        self.typing_users = {}
+
+    def register_typing_user(self, user):
+        self.typing_users[time.time()] = self.client.users[user]
 
     def register_ts(self, ts, *_, as_read=False):
         if float(ts) > float(self.last_seen_ts):
