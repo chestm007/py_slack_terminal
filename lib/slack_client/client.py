@@ -130,6 +130,8 @@ class Channel:
                                                     count=200)
         if response.get('ok'):
             messages = [Message(self.client, **message) for message in response.get('messages')]
+            if len(messages) > 0:
+                self.mark(messages[0].ts)
             return messages
 
     def mark(self, ts):
