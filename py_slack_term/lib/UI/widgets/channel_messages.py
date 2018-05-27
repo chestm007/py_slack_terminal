@@ -53,7 +53,8 @@ class ChannelMessages(npyscreen.BufferPager):
 
         if self.start_display_at > values_len - display_length:
             self.start_display_at = values_len - display_length
-        if self.start_display_at < 0: self.start_display_at = 0
+        if self.start_display_at < 0:
+            self.start_display_at = 0
 
         indexer = 0 + self.start_display_at
         for line in self._my_widgets[:-1]:
@@ -93,7 +94,6 @@ class BoxedChannelMessages(npyscreen.BoxTitle):
         super(BoxedChannelMessages, self).__init__(*args, **kwargs)
         self.current_channel = None
         self.typing_user_watchdog_thread = TypingUserWatchdogThread(channel=self.current_channel)
-
 
     def buffer(self, *args, **kwargs) -> None:
         self.entry_widget.buffer(*args, **kwargs)
