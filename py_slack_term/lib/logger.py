@@ -1,6 +1,9 @@
+import logging
+
 class Logger:
     def __init__(self, name):
-        self.name = name
+        self.logger = logging.getLogger('py_slack_term')
 
     def log(self, msg):
-        print('{}: {}'.format(self.name,msg))
+        self.logger.debug(str(msg))
+

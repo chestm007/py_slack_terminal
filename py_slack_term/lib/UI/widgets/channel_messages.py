@@ -23,14 +23,18 @@ class ChannelMessages(npyscreen.BufferPager):
             if text is not None:
                 match = re.search(self.mention_regex, text)
                 if match:
+                    # replace the <@XXXXXX> decorations, and leave only the user id
                     user_id = match.group().replace('<', '').replace('@', '').replace('>', '')
+                    # replace userid with an '@' annotated username
                     message_dict['text'] = message_dict.get('text').replace(match.group(),
                                                                         '@' + vl.client.users.get(user_id).get_name())
-                return self.message_format.format(**message_dict)
+                text = self.message_format.format(**message_dict)
         # there should only be Message objects passed into here, SOMEHOW we sometimes dont get one
         # or its 'text' attribute is "none"
         # TODO: this is a hack, needs investigation
-        return str(vl)
+        else:
+            text = str(vl)
+        return text
 
     def clear_buffer(self, *args, **kwargs):
         """
@@ -43,6 +47,7 @@ class ChannelMessages(npyscreen.BufferPager):
     def update(self, clear=True):
         #we look this up a lot. Let's have it here.
         if self.autowrap:
+            # this is the patch     V----------------------------V
             self.setValuesWrap(list(self.display_value(l) for l in self.values))
 
         if self.center:
@@ -93,7 +98,7 @@ class BoxedChannelMessages(npyscreen.BoxTitle):
         self.name = 'Messages'
         super(BoxedChannelMessages, self).__init__(*args, **kwargs)
         self.current_channel = None
-        self.typing_user_watchdog_thread = TypingUserWatchdogThread(channel=self.current_channel)
+        self.typing_user_watchdog_thread = TypingUserWatchdogThread(widget=self)
 
     def buffer(self, *args, **kwargs) -> None:
         self.entry_widget.buffer(*args, **kwargs)
@@ -127,14 +132,18 @@ class BoxedChannelMessages(npyscreen.BoxTitle):
         self.typing_user_watchdog_thread.start()
 
     def typing_user_event(self):
-        typing_users = [u.get_name() for u in self.current_channel.typing_users.values()]
+        try:
+            typing_users = [u.get_name() for u in self.current_channel.typing_users.keys()]
+        except:
+            typing_users = []
+
         if len(typing_users) < 1:
             self.footer = None
-        if len(typing_users) == 1:
+        elif len(typing_users) == 1:
             self.footer = '{} is typing...'.format(typing_users[0])
         elif len(typing_users) < 4:
-            self.footer = '{} and {} are typing...'.format(', '.join(typing_users[:-1]), typing_users[-1:])
-        else:
+            self.footer = '{} and {} are typing...'.format(', '.join(typing_users[:-1]), typing_users[-1])
+        elif len(typing_users) >= 4:
             self.footer = 'Multiple people are typing...'
         self.display()
 

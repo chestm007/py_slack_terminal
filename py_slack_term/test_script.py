@@ -22,8 +22,7 @@ if __name__ == '__main__':
     #client.refresh_user_list()
     #print(client.users)
 
-    rtm_url = client.rtm_connect()
-    rtm_client = SlackRTMClient(rtm_url, print)
+    rtm_client = SlackRTMClient(client, print)
     rtm_client.start()
     while True:
         time.sleep(10)

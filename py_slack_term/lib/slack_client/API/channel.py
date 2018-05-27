@@ -31,7 +31,7 @@ class Channel:
         self.typing_users = {}
 
     def register_typing_user(self, user):
-        self.typing_users[time.time()] = self.client.users[user]
+        self.typing_users[self.client.users[user]] = time.time()
 
     def register_ts(self, ts, *_, as_read=False):
         if float(ts) > float(self.last_seen_ts):
