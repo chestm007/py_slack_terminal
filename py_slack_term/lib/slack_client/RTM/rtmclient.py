@@ -66,7 +66,7 @@ class TypingUserWatchdogThread:
                         if self.widget.current_channel.typing_users is not None:
                             prev_len = len(self.widget.current_channel.typing_users.keys())
                             self.widget.current_channel.typing_users = {
-                                u: t for u, t in self.widget.current_channel.typing_users.items() if time.time() < t + 20
+                                u: t for u, t in self.widget.current_channel.typing_users.items() if time.time() < t + 5
                             }
                             if len(self.widget.current_channel.typing_users.keys()) < prev_len:
                                 self.widget.typing_user_event()
