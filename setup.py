@@ -1,10 +1,13 @@
 from distutils.core import setup
+import os
 
 from setuptools import find_packages
 
+VERSION = os.environ.get('TRAVIS_TAG') or '0.0.1-untagged'
+
 setup(
     name='py_slack_term',
-    version='0.1.5',
+    version=VERSION,
     packages=find_packages(),
     url='https://github.com/chestm007/py_slack_terminal',
     license='GPL-2.0',
