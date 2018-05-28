@@ -1,18 +1,21 @@
 import pkg_resources
+import argparse
+import py_slack_term
 
 from .lib import Config
 from .lib.UI import SlackApplication
-
 from py_slack_term.lib.slack_client.API import SlackApiClient
 
-import argparse
+py_slack_term.User.ADMIN_USER_PREFIX = '[ADMIN]'
+py_slack_term.User.PREFER_REAL_NAME = False
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--version', action='store_true')
 parser.add_argument('--debug', action='store_true')
 args = parser.parse_args()
 
 
-def main():
+def main() -> None:
     debug = False
     if args.version:
         version = pkg_resources.get_distribution("py_slack_term").version

@@ -1,14 +1,15 @@
 import curses
 import re
-
+import threading
+import time
 import npyscreen
-from npyscreen.wgmultiline import MORE_LABEL
 
-from py_slack_term.lib.slack_client.RTM.rtmclient import TypingUserWatchdogThread
+from py_slack_term.lib import Logger
+from py_slack_term.lib.npyscreen_patch.buffer_pager import PatchedBufferPager
 from ....lib.slack_client.API import Channel, Message
 
 
-class ChannelMessages(npyscreen.BufferPager):
+class ChannelMessages(PatchedBufferPager):
     message_format = "{user}: {text}"
     mention_regex = re.compile("<@[A-Z0-9]+>")
 
@@ -35,53 +36,6 @@ class ChannelMessages(npyscreen.BufferPager):
         else:
             text = str(vl)
         return text
-
-    def clear_buffer(self, *args, **kwargs):
-        """
-        compatibility with non pythonic code in library
-        """
-        self.clearBuffer(*args, **kwargs)
-
-    # TODO: this is a monkey patch of the base class Pager
-    # TODO: this method can be removed when https://github.com/npcole/npyscreen/pull/60 is merged
-    def update(self, clear=True):
-        #we look this up a lot. Let's have it here.
-        if self.autowrap:
-            # this is the patch     V----------------------------V
-            self.setValuesWrap(list(self.display_value(l) for l in self.values))
-
-        if self.center:
-            self.centerValues()
-
-        display_length = len(self._my_widgets)
-        values_len = len(self.values)
-
-        if self.start_display_at > values_len - display_length:
-            self.start_display_at = values_len - display_length
-        if self.start_display_at < 0:
-            self.start_display_at = 0
-
-        indexer = 0 + self.start_display_at
-        for line in self._my_widgets[:-1]:
-            self._print_line(line, indexer)
-            indexer += 1
-
-        # Now do the final line
-        line = self._my_widgets[-1]
-
-        if values_len <= indexer+1:
-            self._print_line(line, indexer)
-        else:
-            line.value = MORE_LABEL
-            line.highlight = False
-            line.show_bold = False
-
-        for w in self._my_widgets:
-            # call update to avoid needless refreshes
-            w.update(clear=True)
-        # There is a bug somewhere that affects the first line.  This cures it.
-        # Without this line, the first line inherits the color of the form when not editing. Not clear why.
-        self._my_widgets[0].update()
 
     def set_up_handlers(self):
         super(ChannelMessages, self).set_up_handlers()
@@ -152,3 +106,39 @@ class BoxedChannelMessages(npyscreen.BoxTitle):
         super(BoxedChannelMessages, self).destroy()
 
 
+class TypingUserWatchdogThread:
+    def __init__(self, widget):
+        self.widget = widget
+        self.thread = threading.Thread(target=self.main_loop)
+        self.thread.daemon = True
+        self._continue = None
+        self.running = False
+        self.logger = Logger('')
+
+    def main_loop(self):
+        while self._continue:
+            try:
+                if self.widget.current_channel is not None:
+                    if hasattr(self.widget.current_channel, 'typing_users'):
+                        if self.widget.current_channel.typing_users is not None:
+                            prev_len = len(self.widget.current_channel.typing_users.keys())
+                            self.widget.current_channel.typing_users = {
+                                u: t for u, t in self.widget.current_channel.typing_users.items() if time.time() < t + 5
+                            }
+                            if len(self.widget.current_channel.typing_users.keys()) < prev_len:
+                                self.widget.typing_user_event()
+                time.sleep(2)
+            except Exception as e:
+                self.logger.log(e.args)
+
+    def start(self):
+        if not self.running:
+            self._continue = True
+            self.thread.start()
+            self.running = True
+
+    def stop(self):
+        if self.running:
+            self._continue = False
+            self.thread.join(timeout=3)
+            self.running = False

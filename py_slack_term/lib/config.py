@@ -18,6 +18,6 @@ class Config:
 
         with open(self.config_path + self.config_filename) as config_file:
             config = yaml.load(config_file)
-        self.token = config.get('slacktoken')
-        self.debug = True if config.get('debug') else False
+        self.token: str = config.get('slacktoken')
+        self.debug: bool = True if config.get('debug') else False
 

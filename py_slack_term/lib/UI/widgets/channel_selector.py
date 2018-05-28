@@ -6,6 +6,9 @@ from ....lib.slack_client.API import Channel
 
 
 class ChannelSelector(npyscreen.MultiLine):
+    """
+    selected channel colour is set as "BOLD"
+    """
     def __init__(self, *args, **kwargs):
         super(ChannelSelector, self).__init__(*args, **kwargs)
 
@@ -45,5 +48,3 @@ class BoxedChannelSelector(npyscreen.BoxTitle):
 
     def update_channels(self, in_channels) -> None:
         self.values = in_channels
-
-

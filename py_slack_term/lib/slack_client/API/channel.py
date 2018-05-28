@@ -1,6 +1,5 @@
 import time
 
-from py_slack_term.lib.slack_client.RTM.rtmclient import TypingUserWatchdogThread
 from .message import Message
 
 
@@ -30,10 +29,10 @@ class Channel:
         self.has_unread = False
         self.typing_users = {}
 
-    def register_typing_user(self, user):
+    def register_typing_user(self, user: str) -> None:
         self.typing_users[self.client.users[user]] = time.time()
 
-    def register_ts(self, ts, *_, as_read=False):
+    def register_ts(self, ts: float, *_, as_read: bool=False) -> None:
         if float(ts) > float(self.last_seen_ts):
             if as_read:
                 self.last_seen_ts = float(ts)
@@ -43,19 +42,23 @@ class Channel:
         elif not as_read:
             self.has_unread = False
 
-    def get_info(self):
+    def get_info(self) -> dict:
         response = self.client.slackclient.api_call('channels.info', channel=self.id)
         if response.get('ok'):
             return response.get('group')
 
-    def join(self):
-        return self.client.slackclient.api_call('channels.join', channel=self.id)
+    def join(self) -> dict:
+        response = self.client.slackclient.api_call('channels.join', channel=self.id)
+        if response.get('ok'):
+            return response
 
-    def leave(self):
-        return self.client.slackclient.api_call('channels.leave', channel=self.id)
+    def leave(self) -> dict:
+        response = self.client.slackclient.api_call('channels.leave', channel=self.id)
+        if response.get('ok'):
+            return response
 
-    def post_message(self, msg: str, thread_ts=None, reply_broadcast=False):
-        # replace @annotated mentions with the corredt escape sequence
+    def post_message(self, msg: str, thread_ts: float=None, reply_broadcast: bool=False) -> dict:
+        # replace @annotated mentions with the correct escape sequence
         msg.replace('@here', '<!here>')
         msg.replace('@everyone', '<!everyone>')
 
@@ -66,18 +69,22 @@ class Channel:
                                                 thread_ts=thread_ts,
                                                 reply_broadcast=reply_broadcast)
 
-    def post_ephemeral_message(self, msg:str, user: str):
-        return self.client.slackclient.api_call('chat.postEphemeral',
+    def post_ephemeral_message(self, msg:str, user: str) -> dict:
+        response = self.client.slackclient.api_call('chat.postEphemeral',
                                                 channel=self.id,
                                                 text=msg,
                                                 user=user)
+        if response.get('ok'):
+            return response
 
-    def delete_message(self, msg_ts):
-        return self.client.slackclient.api_call('chat.delete',
+    def delete_message(self, msg_ts: float) -> dict:
+        response = self.client.slackclient.api_call('chat.delete',
                                                 channel=self.id,
                                                 ts=msg_ts)
+        if response.get('ok'):
+            return response
 
-    def fetch_messages(self):
+    def fetch_messages(self) -> list:
         response = self.client.slackclient.api_call('conversations.history',
                                                     channel=self.id,
                                                     count=200)
@@ -87,7 +94,7 @@ class Channel:
                 self.mark(messages[0].ts)
             return messages
 
-    def mark(self, ts):
+    def mark(self, ts: float) -> None:
         if self.is_mpim:
             endpoint = 'mpim'
         elif self.is_private:

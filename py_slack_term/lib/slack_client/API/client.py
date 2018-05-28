@@ -10,14 +10,14 @@ class SlackApiClient:
     MPIM = 'mpim'
 
     def __init__(self, config):
-        self.token = config.token
-        self.slackclient = SlackClient(self.token)
+        self.token: str = config.token
+        self.slackclient: SlackClient = SlackClient(self.token)
         self.channels = {}
         self.users = {}
         self.refresh_user_list()
         self.refresh_channel_list()
 
-    def refresh_channel_list(self):
+    def refresh_channel_list(self) -> None:
         channels = self.get_my_channels(_type=self.PUBLIC)
         channels.sort(key=lambda c: c.name)
         self.channels = {str(c.id): c for c in channels}
@@ -30,7 +30,7 @@ class SlackApiClient:
         im_channels.sort(key=lambda c: c.name)
         self.channels.update({str(c.id): c for c in im_channels})
 
-    def get_my_channels(self, _type=None):
+    def get_my_channels(self, _type: str=None) -> list:
         channels = {}
         if _type is None:
             types = (self.PUBLIC, self.PRIVATE, self.IM, self.MPIM)
@@ -43,18 +43,18 @@ class SlackApiClient:
                 channels[t] = [Channel(self, **item) for item in response.get('channels')]
         return channels.get(_type) if _type else channels
 
-    def refresh_user_list(self):
+    def refresh_user_list(self) -> None:
         self.users = {str(u.id): u for u in self.get_users()}
 
-    def get_active_channels(self):
+    def get_active_channels(self) -> list:
         response = self.slackclient.api_call("channels.list", exclude_archived=1)
         if response.get('ok'):
             return [Channel(self, **item) for item in response.get('channels')]
 
-    def get_active_channels_im_in(self):
+    def get_active_channels_im_in(self) -> list:
         return list(self.channels.values())
 
-    def get_users(self):
+    def get_users(self) -> list:
         response = self.slackclient.api_call('users.list')
         if response.get('ok'):
             return [User(r) for r in response.get('members')]
@@ -63,4 +63,3 @@ class SlackApiClient:
         response = self.slackclient.api_call('rtm.connect')
         if response.get('ok'):
             return response.get('url')
-
