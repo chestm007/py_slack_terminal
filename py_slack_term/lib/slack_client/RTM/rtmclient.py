@@ -46,5 +46,5 @@ class SlackRTMClient:
         if hasattr(self, 'wst'):
             del self.wst
         if hasattr(self, 'url'):
-            self.url = None1
+            self.url = None
         self.logger.log('closed RTM client')
