@@ -59,9 +59,8 @@ class Channel:
 
     def post_message(self, msg: str, thread_ts: float=None, reply_broadcast: bool=False) -> dict:
         # replace @annotated mentions with the correct escape sequence
-        msg.replace('@here', '<!here>')
-        msg.replace('@everyone', '<!everyone>')
-
+        msg = msg.replace('@here', '<!here>')
+        msg = msg.replace('@everyone', '<!everyone>')
         return self.client.slackclient.api_call('chat.postMessage',
                                                 channel=self.id,
                                                 text=msg,

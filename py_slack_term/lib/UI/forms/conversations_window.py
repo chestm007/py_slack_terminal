@@ -46,7 +46,6 @@ class SlackConversationsWindowForm(npyscreen.FormBaseNew):
 
         self.refresh_channels()
 
-
     def select_channel(self, ch):
         self.current_channel = ch
         self.channel_messages.set_channel(ch)
