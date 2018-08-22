@@ -66,6 +66,11 @@ class SlackConversationsWindowForm(npyscreen.FormBaseNew):
             self.logger.log(event)
 
         event_type = event.get('type')
+        if event_type == 'hello':
+            if self.current_channel:
+                self.select_channel(self.current_channel)
+                self.channel_messages.display()
+
         if event_type == 'message':
             message = Message(self.slack_client, **event)
             if self.current_channel:
