@@ -20,32 +20,44 @@ class Channel:
         self.is_member = kwargs.get('is_member')
         self.is_private = kwargs.get('is_private')
         self.is_mpim = kwargs.get('is_mpim')
-        self.members = kwargs.get('members')
+        self.members = {u.get_name(): u for u in [self.client.users[m] for m in self.get_members()]}
         self.topic = kwargs.get('topic')
         self.purpose = kwargs.get('purpose')
         self.previous_names = kwargs.get('previous_names')
         self.num_members = kwargs.get('num_members')
         self.last_seen_ts = 0
-        self.has_unread = False
+        self.has_unread = True
+        messages = self.fetch_messages(read=False)
+        self.last_seen_ts = float(messages[0].ts)
+
+        channel_info = self.get_info()
+        last_read = channel_info.get('last_read')
+        if last_read:
+            self.register_ts(last_read, as_read=True)
         self.typing_users = {}
 
     def register_typing_user(self, user: str) -> None:
         self.typing_users[self.client.users[user]] = time.time()
 
     def register_ts(self, ts: float, *_, as_read: bool=False) -> None:
-        if float(ts) > float(self.last_seen_ts):
+        if float(ts) >= float(self.last_seen_ts):
             if as_read:
                 self.last_seen_ts = float(ts)
                 self.has_unread = False
-            else:
+            elif float(ts) > float(self.last_seen_ts) and not as_read:
                 self.has_unread = True
         elif not as_read:
             self.has_unread = False
 
     def get_info(self) -> dict:
-        response = self.client.slackclient.api_call('channels.info', channel=self.id)
+        response = self.client.slackclient.api_call('conversations.info', channel=self.id)
         if response.get('ok'):
-            return response.get('group')
+            return response.get('channel')
+
+    def get_members(self) -> dict:
+        response = self.client.slackclient.api_call('conversations.members', channel=self.id)
+        if response.get('ok'):
+            return response.get('members')
 
     def join(self) -> dict:
         response = self.client.slackclient.api_call('channels.join', channel=self.id)
@@ -53,7 +65,7 @@ class Channel:
             return response
 
     def leave(self) -> dict:
-        response = self.client.slackclient.api_call('channels.leave', channel=self.id)
+        response = self.client.slackclient.api_call('conversations.leave', channel=self.id)
         if response.get('ok'):
             return response
 
@@ -62,11 +74,18 @@ class Channel:
         https://api.slack.com/methods/chat.postMessage
         """
         # replace @annotated mentions with the correct escape sequence
-        msg = msg.replace('@here', '<!here>')
-        msg = msg.replace('@everyone', '<!everyone>')
+        for notification in ('here', 'everyone', 'channel'):
+            msg = msg.replace('@' + notification, '<!' + notification + '>')
+
+        # replace @annotated user mentions with <@USERID> sequence
+        for name, member in self.members.items():
+            if '@' + name + ' ' in msg:
+                msg = msg.replace('@' + name, '<@' + member.id + '>')
+
         return self.client.slackclient.api_call('chat.postMessage',
                                                 channel=self.id,
                                                 text=msg,
+                                                link_names=True,
                                                 as_user=True,
                                                 thread_ts=thread_ts,
                                                 reply_broadcast=reply_broadcast)
@@ -86,14 +105,15 @@ class Channel:
         if response.get('ok'):
             return response
 
-    def fetch_messages(self) -> list:
+    def fetch_messages(self, read: bool=True) -> list:
         response = self.client.slackclient.api_call('conversations.history',
                                                     channel=self.id,
                                                     count=200)
         if response.get('ok'):
             messages = [Message(self.client, **message) for message in response.get('messages')]
             if len(messages) > 0:
-                self.mark(messages[0].ts)
+                if read:
+                    self.mark(messages[0].ts)
             return messages
 
     def mark(self, ts: float) -> None:

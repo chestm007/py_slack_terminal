@@ -1,3 +1,6 @@
+from datetime import datetime
+
+
 class Message:
     def __init__(self, client, **kwargs):
         self.client = client
@@ -16,5 +19,6 @@ class Message:
             text=self.text,
             type=self.type,
             subtype=self.subtype,
-            ts=self.ts
+            ts=self.ts,
+            time=datetime.fromtimestamp(float(self.ts))
         )

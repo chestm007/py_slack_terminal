@@ -20,8 +20,8 @@ class SlackRTMClient:
         while not self.url:
             self.url = self.slack_client.rtm_connect()
             if not self.url:
-                self.logger.log('error getting RealTimeMessaging URL. waiting 5 seconds...')
-                time.sleep(5)
+                self.logger.log('error getting RealTimeMessaging URL. waiting 10 seconds...')
+                time.sleep(10)
 
         self.ws = websocket.WebSocketApp(self.url, on_message=self.on_message, on_error=self.on_error)
         self.wst = threading.Thread(target=self.ws.run_forever)

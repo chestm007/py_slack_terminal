@@ -1,3 +1,5 @@
+import threading
+
 from .channel import Channel
 from .user import User
 from slackclient import SlackClient
@@ -31,6 +33,11 @@ class SlackApiClient:
         self.channels.update({str(c.id): c for c in im_channels})
 
     def get_my_channels(self, _type: str=None) -> list:
+        def _channel_scraper_thread(item, res_list):
+            res = Channel(self, **item)
+            res_list.append(res)
+            return res
+
         channels = {}
         if _type is None:
             types = (self.PUBLIC, self.PRIVATE, self.IM, self.MPIM)
@@ -40,7 +47,16 @@ class SlackApiClient:
             response = self.slackclient.api_call('users.conversations',
                                                  types=t)
             if response.get('ok'):
-                channels[t] = [Channel(self, **item) for item in response.get('channels')]
+                print('fetching channel info for type {}...'.format(t))
+                threads = []
+                res_list = []
+                for item in response.get('channels'):
+                    thread = threading.Thread(target=_channel_scraper_thread, args=[item, res_list])
+                    threads.append(thread)
+                    thread.start()
+                for thread in threads:
+                    thread.join()
+                channels[t] = [r for r in res_list if r is not None]
         return channels.get(_type) if _type else channels
 
     def refresh_user_list(self) -> None:

@@ -3,6 +3,7 @@ import re
 import threading
 import time
 import npyscreen
+from datetime import datetime
 
 from py_slack_term.lib import Logger
 from py_slack_term.lib.npyscreen_patch.buffer_pager import PatchedBufferPager
@@ -10,7 +11,6 @@ from ....lib.slack_client.API import Channel, Message
 
 
 class ChannelMessages(PatchedBufferPager):
-    message_format = "{user}: {text}"
     mention_regex = re.compile("<@[A-Z0-9]+>")
 
     def __init__(self, *args, **kwargs):
@@ -28,8 +28,9 @@ class ChannelMessages(PatchedBufferPager):
                     user_id = match.group().replace('<', '').replace('@', '').replace('>', '')
                     # replace userid with an '@' annotated username
                     message_dict['text'] = message_dict.get('text').replace(match.group(),
-                                                                        '@' + vl.client.users.get(user_id).get_name())
-                text = self.message_format.format(**message_dict)
+                                                                            '@' + vl.client.users.get(user_id).get_name())
+                message_format = f"[{datetime.fromtimestamp(float(message_dict.get('ts'))):%d/%m-%H:%M}] {message_dict.get('user')}: {message_dict.get('text')}"
+                text = message_format
         # there should only be Message objects passed into here, SOMEHOW we sometimes dont get one
         # or its 'text' attribute is "none"
         # TODO: this is a hack, needs investigation

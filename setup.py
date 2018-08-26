@@ -18,6 +18,7 @@ setup(
         "slackclient",
         "npyscreen",
         "pyyaml",
+        'websocket-client==0.48.0'
     ],
     entry_points="""
         [console_scripts]

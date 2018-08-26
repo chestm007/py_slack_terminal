@@ -7,6 +7,7 @@ from ....lib.slack_client.API import Channel
 
 class ChannelSelector(npyscreen.MultiLine):
     """
+    TODO: Make this a tree heirarchy that allows you to have multiple organisations (npyscreen.MLTree)
     selected channel colour is set as "BOLD"
     """
     def __init__(self, *args, **kwargs):
@@ -35,8 +36,15 @@ class ChannelSelector(npyscreen.MultiLine):
         super(ChannelSelector, self).set_up_handlers()
         self.handlers.update({
             curses.KEY_RIGHT: self.h_exit_right,
-            curses.KEY_LEFT: self.h_exit_left
+            curses.KEY_LEFT: self.h_exit_left,
+            ord('d'): self.leave_channel
         })
+
+    def leave_channel(self, *args):
+        cur_channel = self.values[self.cursor_line]
+        cur_channel.leave()
+        self.values.remove(cur_channel)
+        self.display()
 
 
 class BoxedChannelSelector(npyscreen.BoxTitle):
