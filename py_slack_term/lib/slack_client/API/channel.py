@@ -4,7 +4,7 @@ from .message import Message
 
 
 class Channel:
-    def __init__(self, client, **kwargs):
+    def __init__(self, client, kwargs):
         self.client = client
         self.id = kwargs.get('id')
         self.name = kwargs.get('name') or self.client.users.get(kwargs.get('user')).name

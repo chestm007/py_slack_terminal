@@ -1,6 +1,10 @@
+import asyncio
 import pprint
 
 import time
+from concurrent.futures.thread import ThreadPoolExecutor
+
+from slackclient.channel import Channel
 
 from py_slack_term.lib import Config
 from py_slack_term.lib.slack_client.API import SlackApiClient
@@ -13,25 +17,29 @@ class DummyLogger:
 
 
 if __name__ == '__main__':
+    starttime = time.time()
     """
     this is just a dummy testing stub. not executed when ran from cli
     """
 
     print = pprint.pprint
+
     config = Config()
+
     client = SlackApiClient(config)
 
     def api_test():
         pass
-        #client.refresh_channel_list()
         #print(client.channels)
         #print([m.text for m in client.channels['admin'].fetch_messages()])
 
         #client.refresh_user_list()
         #print(client.users)
         for channel in client.channels.values():
-            if channel.name == 'random':
-                print(channel.members)
+            if channel.name == 'shitzngiggles':
+                while True:
+                    print(channel.post_message('@chris laptops?'))
+                    time.sleep(3)
 
     def rtm_test():
         rtm_client = SlackRTMClient(client, print)
@@ -42,4 +50,6 @@ if __name__ == '__main__':
             pass
 
     api_test()
+    endtime = time.time()
+    print(endtime - starttime)
 

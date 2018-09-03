@@ -1,4 +1,4 @@
-import threading
+import asyncio
 
 from .channel import Channel
 from .user import User
@@ -33,10 +33,17 @@ class SlackApiClient:
         self.channels.update({str(c.id): c for c in im_channels})
 
     def get_my_channels(self, _type: str=None) -> list:
-        def _channel_scraper_thread(item, res_list):
-            res = Channel(self, **item)
-            res_list.append(res)
-            return res
+        async def channel_scraper_thread(t):
+            response = self.slackclient.api_call('users.conversations',
+                                                 types=t)
+            if response.get('ok'):
+                print('fetching channel info for type {}...'.format(t))
+                loop = asyncio.get_event_loop()
+                futures = []
+                for item in response.get('channels'):
+                    futures.append(loop.run_in_executor(None, Channel, self, item))
+                responses = [await f for f in futures]
+                return responses
 
         channels = {}
         if _type is None:
@@ -44,19 +51,9 @@ class SlackApiClient:
         else:
             types = [_type]
         for t in types:
-            response = self.slackclient.api_call('users.conversations',
-                                                 types=t)
-            if response.get('ok'):
-                print('fetching channel info for type {}...'.format(t))
-                threads = []
-                res_list = []
-                for item in response.get('channels'):
-                    thread = threading.Thread(target=_channel_scraper_thread, args=[item, res_list])
-                    threads.append(thread)
-                    thread.start()
-                for thread in threads:
-                    thread.join()
-                channels[t] = [r for r in res_list if r is not None]
+                loop = asyncio.get_event_loop()
+                responses = loop.run_until_complete(channel_scraper_thread(t))
+                channels[t] = [r for r in responses if r is not None]
         return channels.get(_type) if _type else channels
 
     def refresh_user_list(self) -> None:
