@@ -28,7 +28,10 @@ class Channel:
         self.last_seen_ts = 0
         self.has_unread = True
         messages = self.fetch_messages(read=False)
-        self.last_seen_ts = float(messages[0].ts)
+        try:
+            self.last_seen_ts = float(messages[0].ts)
+        except IndexError:
+            pass
 
         channel_info = self.get_info()
         last_read = channel_info.get('last_read')
