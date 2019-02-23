@@ -6,3 +6,5 @@
 py_slack_term\.egg-info/
 
 dist/
+
+venv/
