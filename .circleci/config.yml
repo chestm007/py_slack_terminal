@@ -29,6 +29,13 @@ jobs:
     steps:
       - checkout
       - <<: *python3_install
+  python3.7:
+    docker:
+      - image: circleci/python:3.7.3-stretch
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - <<: *python3_install
   deploy:
     docker:
       - image: circleci/python:3.6.8-stretch
@@ -46,3 +53,4 @@ workflows:
       - deploy:
           requires:
             - python3.6
+            - python3.7
