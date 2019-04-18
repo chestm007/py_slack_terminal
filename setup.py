@@ -1,9 +1,10 @@
+import time
 from distutils.core import setup
 import os
 
 from setuptools import find_packages
 
-VERSION = os.environ.get('TRAVIS_TAG') or '0.0.1-untagged'
+VERSION = os.environ.get('CIRCLE_TAG') or '0.0.1-post{}'.format(int(time.time()))
 
 setup(
     name='py_slack_term',
