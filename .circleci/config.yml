@@ -50,6 +50,7 @@ workflows:
   build_and_test:
     jobs:
       - python3.6
+      - python3.7
       - deploy:
           requires:
             - python3.6
