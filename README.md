@@ -1,5 +1,5 @@
 # Python Slack Terminal #
-[![Build Status](https://travis-ci.com/chestm007/py_slack_terminal.svg?branch=master)](https://travis-ci.com/chestm007/py_slack_terminal) 
+[![CircleCI](https://circleci.com/gh/chestm007/py_slack_terminal.svg?style=svg)](https://circleci.com/gh/chestm007/py_slack_terminal)  
 
 ## install ##
 ```
