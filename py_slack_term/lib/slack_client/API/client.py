@@ -2,7 +2,6 @@ import asyncio
 
 from .channel import Channel
 from .user import User
-from concurrent.futures import ThreadPoolExecutor
 from slack_sdk import WebClient
 from slack_sdk.socket_mode import SocketModeClient
 
@@ -39,25 +38,29 @@ class SlackApiClient:
         self.channels.update({str(c.id): c for c in im_channels})
 
     def get_my_channels(self, _type: str=None) -> list:
-        """Fetch channels using ThreadPoolExecutor for Channel construction."""
+        """Fetch channels using paginated API calls."""
         if _type is None:
             types = (self.PUBLIC, self.PRIVATE, self.IM, self.MPIM)
         else:
             types = [_type]
 
         all_channels = []
-        with ThreadPoolExecutor() as executor:
-            for t in types:
-                response = self.web_client.users_conversations(types=t)
+        for t in types:
+            for response in self.web_client.paginated(
+                self.web_client.users_conversations,
+                cursor_in_response='response_metadata.next_cursor',
+                items_in_response='channels',
+                types=t
+            ):
                 if response.get('ok'):
-                    futures = [
-                        executor.submit(Channel, self, item)
-                        for item in response.get('channels')
-                    ]
-                    for f in futures:
-                        ch = f.result()
-                        if ch is not None:
-                            all_channels.append(ch)
+                    for item in response.get('channels'):
+                        try:
+                            ch = Channel(self, item)
+                            if ch is not None:
+                                all_channels.append(ch)
+                        except Exception:
+                            # Skip channels that fail to construct
+                            pass
         return all_channels
 
     def refresh_user_list(self) -> None:
