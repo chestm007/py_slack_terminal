@@ -1,6 +1,7 @@
 import time
 
 from .message import Message
+from slack_sdk.errors import SlackApiError
 
 
 class Channel:
@@ -20,24 +21,41 @@ class Channel:
         self.is_member = kwargs.get('is_member')
         self.is_private = kwargs.get('is_private')
         self.is_mpim = kwargs.get('is_mpim')
-        self.members = {u.get_name(): u for u in [self.client.users[m] for m in self.get_members()]}
-        self.topic = kwargs.get('topic')
-        self.purpose = kwargs.get('purpose')
-        self.previous_names = kwargs.get('previous_names')
-        self.num_members = kwargs.get('num_members')
+        self.members = {}
+        self.topic = None
+        self.purpose = None
+        self.previous_names = None
+        self.num_members = None
         self.last_seen_ts = 0
         self.has_unread = True
-        messages = self.fetch_messages(read=False)
+        self.typing_users = {}
+
         try:
-            self.last_seen_ts = float(messages[0].ts)
-        except IndexError:
+            self.members = {u.get_name(): u for u in [self.client.users[m] for m in self.get_members()]}
+        except SlackApiError:
             pass
 
-        channel_info = self.get_info()
-        last_read = channel_info.get('last_read')
-        if last_read:
-            self.register_ts(last_read, as_read=True)
-        self.typing_users = {}
+        try:
+            messages = self.fetch_messages(read=False)
+            try:
+                self.last_seen_ts = float(messages[0].ts)
+            except (IndexError, TypeError):
+                pass
+        except SlackApiError:
+            pass
+
+        try:
+            channel_info = self.get_info()
+            if channel_info:
+                self.topic = channel_info.get('topic')
+                self.purpose = channel_info.get('purpose')
+                self.previous_names = channel_info.get('previous_names')
+                self.num_members = channel_info.get('num_members')
+                last_read = channel_info.get('last_read')
+                if last_read:
+                    self.register_ts(last_read, as_read=True)
+        except SlackApiError:
+            pass
 
     def register_typing_user(self, user: str) -> None:
         self.typing_users[self.client.users[user]] = time.time()
