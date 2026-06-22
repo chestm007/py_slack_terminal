@@ -98,7 +98,7 @@ class SlackApiClient:
         self.socket_mode_client = SocketModeClient(
             app_token=self.socket_mode_token,
             web_client=self.web_client,
-            on_message_listener=on_message_handler
+            on_message_listeners=[on_message_handler]
         )
         self.socket_mode_client.connect()
 
