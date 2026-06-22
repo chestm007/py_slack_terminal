@@ -4,9 +4,6 @@ from .channel import Channel
 from .user import User
 from slack_sdk import WebClient
 from slack_sdk.socket_mode import SocketModeClient
-from slack_sdk.socket_mode.response import SocketModeResponse
-from slack_sdk.socket_mode.request import SocketModeRequest
-from slack_sdk.socket_mode.request.base import BaseSocketModeRequest
 
 
 class SlackApiClient:
