@@ -38,7 +38,7 @@ class SlackApiClient:
         self.channels.update({str(c.id): c for c in im_channels})
 
     def get_my_channels(self, _type: str=None) -> list:
-        """Fetch channels using paginated API calls."""
+        """Fetch all channels using manual cursor-based pagination."""
         if _type is None:
             types = (self.PUBLIC, self.PRIVATE, self.IM, self.MPIM)
         else:
@@ -46,12 +46,12 @@ class SlackApiClient:
 
         all_channels = []
         for t in types:
-            for response in self.web_client.paginated(
-                self.web_client.users_conversations,
-                cursor_in_response='response_metadata.next_cursor',
-                items_in_response='channels',
-                types=t
-            ):
+            cursor = None
+            while True:
+                kwargs = {'types': t}
+                if cursor:
+                    kwargs['cursor'] = cursor
+                response = self.web_client.users_conversations(**kwargs)
                 if response.get('ok'):
                     for item in response.get('channels'):
                         try:
@@ -61,6 +61,11 @@ class SlackApiClient:
                         except Exception:
                             # Skip channels that fail to construct
                             pass
+                    cursor = response.get('response_metadata', {}).get('next_cursor')
+                    if not cursor:
+                        break
+                else:
+                    break
         return all_channels
 
     def refresh_user_list(self) -> None:
