@@ -2,6 +2,7 @@ import asyncio
 
 from .channel import Channel
 from .user import User
+from concurrent.futures import ThreadPoolExecutor
 from slack_sdk import WebClient
 from slack_sdk.socket_mode import SocketModeClient
 
@@ -38,26 +39,26 @@ class SlackApiClient:
         self.channels.update({str(c.id): c for c in im_channels})
 
     def get_my_channels(self, _type: str=None) -> list:
-        async def channel_scraper_thread(t):
-            response = self.web_client.users_conversations(types=t)
-            if response.get('ok'):
-                loop = asyncio.get_event_loop()
-                futures = []
-                for item in response.get('channels'):
-                    futures.append(loop.run_in_executor(None, Channel, self, item))
-                responses = [await f for f in futures]
-                return responses
-
-        channels = {}
+        """Fetch channels using ThreadPoolExecutor for Channel construction."""
         if _type is None:
             types = (self.PUBLIC, self.PRIVATE, self.IM, self.MPIM)
         else:
             types = [_type]
-        for t in types:
-                loop = asyncio.get_event_loop()
-                responses = loop.run_until_complete(channel_scraper_thread(t))
-                channels[t] = [r for r in responses if r is not None]
-        return channels.get(_type) if _type else channels
+
+        all_channels = []
+        with ThreadPoolExecutor() as executor:
+            for t in types:
+                response = self.web_client.users_conversations(types=t)
+                if response.get('ok'):
+                    futures = [
+                        executor.submit(Channel, self, item)
+                        for item in response.get('channels')
+                    ]
+                    for f in futures:
+                        ch = f.result()
+                        if ch is not None:
+                            all_channels.append(ch)
+        return all_channels
 
     def refresh_user_list(self) -> None:
         self.users = {str(u.id): u for u in self.get_users()}
