@@ -15,7 +15,7 @@ class SlackApiClient:
     def __init__(self, config):
         self.token: str = config.token
         self.socket_mode_token: str = getattr(config, 'socket_mode_token', None)
-        self.web_client: WebClient = WebClient(token=self.token, run_async=False)
+        self.web_client: WebClient = WebClient(token=self.token)
         self.channels = {}
         self.users = {}
         self.rtm_url: str = None
