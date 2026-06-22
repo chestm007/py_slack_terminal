@@ -1,4 +1,4 @@
-import pkg_resources
+from importlib.metadata import version
 import argparse
 import py_slack_term
 
@@ -18,8 +18,7 @@ args = parser.parse_args()
 def main() -> None:
     debug = False
     if args.version:
-        version = pkg_resources.get_distribution("py_slack_term").version
-        print("\nVersion: py_slack_term: {}".format(version))
+        print(f"\nVersion: py_slack_term: {version('py_slack_term')}")
         return
     if args.debug:
         debug = True
