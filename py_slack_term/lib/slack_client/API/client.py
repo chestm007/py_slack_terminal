@@ -2,7 +2,11 @@ import asyncio
 
 from .channel import Channel
 from .user import User
-from slackclient import SlackClient
+from slack_sdk import WebClient
+from slack_sdk.socket_mode import SocketModeClient
+from slack_sdk.socket_mode.response import SocketModeResponse
+from slack_sdk.socket_mode.request import SocketModeRequest
+from slack_sdk.socket_mode.request.base import BaseSocketModeRequest
 
 
 class SlackApiClient:
@@ -13,9 +17,13 @@ class SlackApiClient:
 
     def __init__(self, config):
         self.token: str = config.token
-        self.slackclient: SlackClient = SlackClient(self.token)
+        self.socket_mode_token: str = getattr(config, 'socket_mode_token', None)
+        self.web_client: WebClient = WebClient(token=self.token, run_async=False)
         self.channels = {}
         self.users = {}
+        self.rtm_url: str = None
+        self.socket_mode_client: SocketModeClient = None
+        self.on_socket_mode_response = None
         self.refresh_user_list()
         self.refresh_channel_list()
 
@@ -34,10 +42,8 @@ class SlackApiClient:
 
     def get_my_channels(self, _type: str=None) -> list:
         async def channel_scraper_thread(t):
-            response = self.slackclient.api_call('users.conversations',
-                                                 types=t)
+            response = self.web_client.users_conversations(types=t)
             if response.get('ok'):
-                print('fetching channel info for type {}...'.format(t))
                 loop = asyncio.get_event_loop()
                 futures = []
                 for item in response.get('channels'):
@@ -60,7 +66,7 @@ class SlackApiClient:
         self.users = {str(u.id): u for u in self.get_users()}
 
     def get_active_channels(self) -> list:
-        response = self.slackclient.api_call("channels.list", exclude_archived=1)
+        response = self.web_client.conversations_list(exclude_archived=True)
         if response.get('ok'):
             return [Channel(self, **item) for item in response.get('channels')]
 
@@ -68,11 +74,38 @@ class SlackApiClient:
         return list(self.channels.values())
 
     def get_users(self) -> list:
-        response = self.slackclient.api_call('users.list')
+        response = self.web_client.users_list()
         if response.get('ok'):
             return [User(r) for r in response.get('members')]
 
     def rtm_connect(self) -> str:
-        response = self.slackclient.api_call('rtm.connect')
+        """Deprecated RTM connect — kept for backward compatibility."""
+        response = self.web_client.rtm_connect()
         if response.get('ok'):
             return response.get('url')
+
+    def socket_mode_connect(self, on_message_handler) -> None:
+        """
+        Connect using Socket Mode instead of deprecated RTM.
+        
+        Socket Mode is Slack's recommended real-time messaging transport.
+        It uses WebSocket over WSS instead of requiring public IP + port.
+        """
+        if not self.socket_mode_token:
+            raise ValueError(
+                "Socket Mode token not configured. "
+                "Add it to your config.yml or set SLACK_APP_TOKEN env var."
+            )
+
+        self.socket_mode_client = SocketModeClient(
+            app_token=self.socket_mode_token,
+            web_client=self.web_client,
+            on_message_listener=on_message_handler
+        )
+        self.socket_mode_client.connect()
+
+    def socket_mode_disconnect(self) -> None:
+        """Disconnect the Socket Mode client."""
+        if self.socket_mode_client:
+            self.socket_mode_client.close()
+            self.socket_mode_client = None

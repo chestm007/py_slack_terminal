@@ -1,3 +1,4 @@
-slackclient
+slack-sdk>=3.0.0
 npyscreen
 pyyaml
+websocket-client

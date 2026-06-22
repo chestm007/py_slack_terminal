@@ -96,3 +96,6 @@ class SlackConversationsWindowForm(npyscreen.FormBaseNew):
 
     def stop(self):
         self.rtm_client.stop()
+        # Gracefully disconnect Socket Mode
+        if hasattr(self.slack_client, 'socket_mode_client') and self.slack_client.socket_mode_client:
+            self.slack_client.socket_mode_disconnect()

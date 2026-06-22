@@ -53,22 +53,22 @@ class Channel:
             self.has_unread = False
 
     def get_info(self) -> dict:
-        response = self.client.slackclient.api_call('conversations.info', channel=self.id)
+        response = self.client.web_client.conversations_info(channel=self.id)
         if response.get('ok'):
             return response.get('channel')
 
     def get_members(self) -> dict:
-        response = self.client.slackclient.api_call('conversations.members', channel=self.id)
+        response = self.client.web_client.conversations_members(channel=self.id)
         if response.get('ok'):
             return response.get('members')
 
     def join(self) -> dict:
-        response = self.client.slackclient.api_call('channels.join', channel=self.id)
+        response = self.client.web_client.conversations_join(channel=self.id)
         if response.get('ok'):
             return response
 
     def leave(self) -> dict:
-        response = self.client.slackclient.api_call('conversations.leave', channel=self.id)
+        response = self.client.web_client.conversations_leave(channel=self.id)
         if response.get('ok'):
             return response
 
@@ -85,33 +85,37 @@ class Channel:
             if '@' + name + ' ' in msg:
                 msg = msg.replace('@' + name, '<@' + member.id + '>')
 
-        return self.client.slackclient.api_call('chat.postMessage',
-                                                channel=self.id,
-                                                text=msg,
-                                                link_names=True,
-                                                as_user=True,
-                                                thread_ts=thread_ts,
-                                                reply_broadcast=reply_broadcast)
+        return self.client.web_client.chat_post_message(
+            channel=self.id,
+            text=msg,
+            link_names=True,
+            as_user=True,
+            thread_ts=thread_ts,
+            reply_broadcast=reply_broadcast
+        )
 
     def post_ephemeral_message(self, msg:str, user: str) -> dict:
-        response = self.client.slackclient.api_call('chat.postEphemeral',
-                                                channel=self.id,
-                                                text=msg,
-                                                user=user)
+        response = self.client.web_client.chat_post_ephemeral(
+            channel=self.id,
+            text=msg,
+            user=user
+        )
         if response.get('ok'):
             return response
 
     def delete_message(self, msg_ts: float) -> dict:
-        response = self.client.slackclient.api_call('chat.delete',
-                                                channel=self.id,
-                                                ts=msg_ts)
+        response = self.client.web_client.chat_delete(
+            channel=self.id,
+            ts=msg_ts
+        )
         if response.get('ok'):
             return response
 
     def fetch_messages(self, read: bool=True) -> list:
-        response = self.client.slackclient.api_call('conversations.history',
-                                                    channel=self.id,
-                                                    count=200)
+        response = self.client.web_client.conversations_history(
+            channel=self.id,
+            count=200
+        )
         if response.get('ok'):
             messages = [Message(self.client, **message) for message in response.get('messages')]
             if len(messages) > 0:
@@ -121,13 +125,14 @@ class Channel:
 
     def mark(self, ts: float) -> None:
         if self.is_mpim:
-            endpoint = 'mpim'
+            endpoint = self.client.web_client.mpim_mark
         elif self.is_private:
-            endpoint = 'groups'
+            endpoint = self.client.web_client.groups_mark
         elif self.is_channel:
-            endpoint = 'channels'
+            endpoint = self.client.web_client.channels_mark
         else:
-            endpoint = 'im'
-        self.client.slackclient.api_call(endpoint + '.mark',
-                                         channel=self.id,
-                                         ts=ts)
+            endpoint = self.client.web_client.im_mark
+        endpoint(
+            channel=self.id,
+            ts=ts
+        )
