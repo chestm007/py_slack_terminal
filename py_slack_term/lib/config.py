@@ -12,13 +12,13 @@ class Config:
         if not os.path.isfile(self.config_path + self.config_filename):
             print("Welcome to py_slack_term!")
             print("Get your tokens from: https://api.slack.com/apps")
-            print("Select a bot and copy its Bot User OAuth Token (xoxb-...)")
+            print("Authorize the app for a user and copy that User OAuth Token (usually xoxp-...)")
             print("If using Socket Mode, also copy your App-Level Token (xapp-...)")
             print()
-            bot_token = input("Bot Token (xoxb-...): ").strip()
+            user_token = input("User OAuth Token (xoxp-...): ").strip()
             app_token = input("App-Level Token for Socket Mode (xapp-..., optional): ").strip()
             config = dict(
-                slacktoken=bot_token,
+                slacktoken=user_token,
                 socket_mode_token=app_token if app_token else None
             )
             with open(self.config_path + self.config_filename, 'w') as config_file:

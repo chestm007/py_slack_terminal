@@ -1,10 +1,5 @@
-import asyncio
-import pprint
-
 import time
-from concurrent.futures.thread import ThreadPoolExecutor
-
-from slackclient.channel import Channel
+import pprint
 
 from py_slack_term.lib import Config
 from py_slack_term.lib.slack_client.API import SlackApiClient
@@ -30,11 +25,11 @@ if __name__ == '__main__':
 
     def api_test():
         pass
-        #print(client.channels)
-        #print([m.text for m in client.channels['admin'].fetch_messages()])
+        # print(client.channels)
+        # print([m.text for m in client.channels['admin'].fetch_messages()])
 
-        #client.refresh_user_list()
-        #print(client.users)
+        # client.refresh_user_list()
+        # print(client.users)
         for channel in client.channels.values():
             if channel.name == 'shitzngiggles':
                 while True:
@@ -52,4 +47,3 @@ if __name__ == '__main__':
     api_test()
     endtime = time.time()
     print(endtime - starttime)
-

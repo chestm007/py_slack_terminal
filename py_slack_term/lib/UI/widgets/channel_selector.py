@@ -30,21 +30,33 @@ class ChannelSelector(npyscreen.MultiLine):
         :return:
         """
         super(ChannelSelector, self).h_select(ch)
-        self.parent.select_channel(self.values[self.value])
+        self.parent.select_channel(self.values[self.cursor_line])
 
     def set_up_handlers(self):
         super(ChannelSelector, self).set_up_handlers()
         self.handlers.update({
             curses.KEY_RIGHT: self.h_exit_right,
             curses.KEY_LEFT: self.h_exit_left,
-            ord('d'): self.leave_channel
+            ord('d'): self.leave_channel,
+            ord('n'): self.create_channel,
+            ord('c'): self.create_dm,
+            ord('q'): self.quit_app,
         })
+
+    def quit_app(self, *args):
+        self.parent.quit_app()
 
     def leave_channel(self, *args):
         cur_channel = self.values[self.cursor_line]
         cur_channel.leave()
         self.values.remove(cur_channel)
         self.display()
+
+    def create_channel(self, *args):
+        self.parent.create_channel()
+
+    def create_dm(self, *args):
+        self.parent.create_dm()
 
 
 class BoxedChannelSelector(npyscreen.BoxTitle):

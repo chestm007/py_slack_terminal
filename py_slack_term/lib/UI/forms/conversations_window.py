@@ -1,6 +1,10 @@
+import curses
+
 import npyscreen
+from npyscreen.utilNotify import notify_confirm, single_line_input
 
 from py_slack_term.lib import Logger
+from py_slack_term.lib.UI.forms.user_picker import UserPickerPopup
 from py_slack_term.lib.UI.widgets import BoxedChannelSelector, BoxedChannelMessages, BoxedMessageComposer
 from py_slack_term.lib.UI.widgets.debug_widget import BoxedScreenLogger
 from py_slack_term.lib.slack_client.API import Message, SlackApiClient
@@ -24,42 +28,108 @@ class SlackConversationsWindowForm(npyscreen.FormBaseNew):
         self.rtm_client.logger = self.logger
         self.channel_messages.typing_user_watchdog_thread.logger = self.logger
 
+    def set_up_handlers(self):
+        super().set_up_handlers()
+        self.handlers.update({
+            ord('q'): self.quit_app,
+        })
+
+    def quit_app(self, *args):
+        self.stop()
+        if hasattr(self, 'parentApp'):
+            self.parentApp.setNextForm(None)
+        self.editing = False
+
     def create(self):
         y, x = self.useable_space()
 
         if self.config.debug:
-            self.channel_selector = self.add_widget(BoxedChannelSelector, max_width=(x // 4) -2)
-            self.channel_messages = self.add_widget(BoxedChannelMessages,
-                                                    relx=self.channel_selector.width + 2,
-                                                    rely=self.channel_selector.rely,
-                                                    max_height=y-8,
-                                                    max_width=(x // 2)-2)  # type: BoxedChannelMessages
-            self.message_composer = self.add_widget(BoxedMessageComposer, relx=self.channel_messages.relx, rely=y-6, max_height=4, max_width = self.channel_messages.width)
+            self.channel_selector = self.add_widget(BoxedChannelSelector, max_width=(x // 4) - 2)
+            self.channel_messages = self.add_widget(
+                BoxedChannelMessages,
+                relx=self.channel_selector.width + 2,
+                rely=self.channel_selector.rely,
+                max_height=y - 8,
+                max_width=(x // 2) - 2,
+            )  # type: BoxedChannelMessages
+            self.message_composer = self.add_widget(
+                BoxedMessageComposer,
+                relx=self.channel_messages.relx,
+                rely=y - 6,
+                max_height=4,
+                max_width=self.channel_messages.width,
+            )
             self.screen_logger = self.add_widget(BoxedScreenLogger, relx=(x // 4 * 3), rely=self.channel_selector.rely)
         else:
             self.channel_selector = self.add_widget(BoxedChannelSelector, max_width=x // 5)
-            self.channel_messages = self.add_widget(BoxedChannelMessages,
-                                                    relx=self.channel_selector.width + 3,
-                                                    rely=self.channel_selector.rely,
-                                                    max_height=y-8)  # type: BoxedChannelMessages
-            self.message_composer = self.add_widget(BoxedMessageComposer, relx=self.channel_messages.relx, rely=y-6, max_height=4)
+            self.channel_messages = self.add_widget(
+                BoxedChannelMessages,
+                relx=self.channel_selector.width + 3,
+                rely=self.channel_selector.rely,
+                max_height=y - 8,
+            )  # type: BoxedChannelMessages
+            self.message_composer = self.add_widget(
+                BoxedMessageComposer,
+                relx=self.channel_messages.relx,
+                rely=y - 6,
+                max_height=4,
+            )
 
         self.refresh_channels()
 
     def select_channel(self, ch):
+        if ch is None:
+            return
+        ch.load_details()
         self.current_channel = ch
         self.channel_messages.set_channel(ch)
         self.channel_messages.clear_buffer()
         self.channel_messages.buffer(list(reversed(ch.fetch_messages())))
+        self.channel_messages.message_watchdog_thread.set_channel(ch)
         self.current_channel.has_unread = False
 
     def refresh_channels(self):
+        if self.channel_selector is None:
+            return
         self.channel_selector.update_channels(self.slack_client.get_active_channels_im_in())
 
     def send_message(self):
         message = self.message_composer.value
         self.message_composer.clear_message()
         self.current_channel.post_message(msg=message)
+
+    def _notify_error(self, title: str, message: str):
+        notify_confirm(message, title=title)
+
+    def create_channel(self):
+        name = single_line_input(title='Create channel', default_value='')
+        if not name:
+            return
+        try:
+            channel = self.slack_client.create_channel(name)
+            self.refresh_channels()
+            self.select_channel(self.slack_client.channels.get(channel.id, channel))
+        except Exception as exc:
+            self._notify_error('Create channel failed', str(exc))
+
+    def create_dm(self):
+        users = list(self.slack_client.users.values())
+        if not users:
+            self._notify_error('Start DM failed', 'No Slack users are loaded yet.')
+            return
+
+        picker = UserPickerPopup(name='Start DM with', users=users)
+        picker.edit()
+        selected_user = picker.value
+        if not selected_user:
+            return
+
+        try:
+            channel = self.slack_client.open_dm(selected_user)
+            self.refresh_channels()
+            self.select_channel(self.slack_client.channels.get(channel.id, channel))
+        except Exception as exc:
+            self._notify_error('Start DM failed', str(exc))
 
     def new_RTM_event(self, event: dict):
         if event != {}:
@@ -73,11 +143,14 @@ class SlackConversationsWindowForm(npyscreen.FormBaseNew):
 
         if event_type == 'message':
             message = Message(self.slack_client, **event)
-            if self.current_channel:
-                if event.get('channel') == str(self.current_channel.id):
+            chan = self.slack_client.channels.get(event.get('channel'))
+            if chan:
+                if self.current_channel and event.get('channel') == str(self.current_channel.id):
                     self.channel_messages.buffer([message])
                     self.current_channel.mark(message.ts)
-                self.current_channel.has_unread = False
+                    self.current_channel.has_unread = False
+                else:
+                    chan.has_unread = True
                 if self.channel_selector:
                     self.channel_selector.display()
 
@@ -96,6 +169,5 @@ class SlackConversationsWindowForm(npyscreen.FormBaseNew):
 
     def stop(self):
         self.rtm_client.stop()
-        # Gracefully disconnect Socket Mode
         if hasattr(self.slack_client, 'socket_mode_client') and self.slack_client.socket_mode_client:
             self.slack_client.socket_mode_disconnect()

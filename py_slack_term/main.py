@@ -1,5 +1,6 @@
-import pkg_resources
 import argparse
+from importlib import metadata
+
 import py_slack_term
 
 from .lib import Config
@@ -18,7 +19,10 @@ args = parser.parse_args()
 def main() -> None:
     debug = False
     if args.version:
-        version = pkg_resources.get_distribution("py_slack_term").version
+        try:
+            version = metadata.version('py_slack_term')
+        except metadata.PackageNotFoundError:
+            version = 'unknown'
         print("\nVersion: py_slack_term: {}".format(version))
         return
     if args.debug:
@@ -33,6 +37,7 @@ def main() -> None:
     except KeyboardInterrupt:
         app.stop()
         pass
+
 
 if __name__ == "__main__":
     main()

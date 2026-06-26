@@ -16,9 +16,9 @@ setup(
     author_email='chestm007@hotmail.com',
     description='Terminal based client for Slack',
     install_requires=[
-        "slackclient",
-        "npyscreen",
-        "pyyaml",
+        'slack_sdk>=3.0.0',
+        'npyscreen',
+        'pyyaml',
         'websocket-client==0.48.0'
     ],
     entry_points="""

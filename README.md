@@ -12,16 +12,24 @@ $ pip install py_slack_terminal
 $ slack-term
 ```
 
+## shortcuts ##
+
+While focused on the channel list:
+- `n` creates a new public channel
+- `c` starts a new DM
+- `d` leaves the selected channel
+- `q` closes the app
+
 ## authentication ##
 
-on first launch, you'll be prompted to enter your slack token, this wil then be saved in `~/.config/_py_slack_term/config.yml`
+On first launch, you'll be prompted for your Slack User OAuth Token (`xoxp-...`).
+If you want real-time events, also enter your App-Level Token (`xapp-...`) for Socket Mode.
 
- -- alternatively
+The config is saved in `~/.config/py_slack_term/config.yml`.
 
-set your token in `~/.config/py_slack_term/config.yml`
+Alternatively, create the config manually:
 
 ```
-slacktoken: <token here>
+slacktoken: <bot token here>
+socket_mode_token: <app-level token here>
 ```
-
-
