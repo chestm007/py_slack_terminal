@@ -12,6 +12,8 @@ from py_slack_term.lib.slack_client.RTM import SlackRTMClient
 
 
 class SlackConversationsWindowForm(npyscreen.FormBaseNew):
+    SHORTCUTS_FOOTER = '[  c - create dm  |  d - leave channel  |  n - new channel  |  q - quit  ]'
+
     def __init__(self, *args, slack_client=None, config=None, **kwargs):
         self.config = config
         self.logger = Logger('SlackWindowForm')
@@ -49,14 +51,14 @@ class SlackConversationsWindowForm(npyscreen.FormBaseNew):
                 BoxedChannelMessages,
                 relx=self.channel_selector.width + 2,
                 rely=self.channel_selector.rely,
-                max_height=y - 8,
+                max_height=y - 10,
                 max_width=(x // 2) - 2,
             )  # type: BoxedChannelMessages
             self.message_composer = self.add_widget(
                 BoxedMessageComposer,
                 relx=self.channel_messages.relx,
-                rely=y - 6,
-                max_height=4,
+                rely=y - 8,
+                max_height=6,
                 max_width=self.channel_messages.width,
             )
             self.screen_logger = self.add_widget(BoxedScreenLogger, relx=(x // 4 * 3), rely=self.channel_selector.rely)
@@ -66,16 +68,43 @@ class SlackConversationsWindowForm(npyscreen.FormBaseNew):
                 BoxedChannelMessages,
                 relx=self.channel_selector.width + 3,
                 rely=self.channel_selector.rely,
-                max_height=y - 8,
+                max_height=y - 10,
             )  # type: BoxedChannelMessages
             self.message_composer = self.add_widget(
                 BoxedMessageComposer,
                 relx=self.channel_messages.relx,
-                rely=y - 6,
-                max_height=4,
+                rely=y - 8,
+                max_height=6,
             )
 
         self.refresh_channels()
+
+    def draw_form(self):
+        super().draw_form()
+        if not hasattr(self, 'curses_pad'):
+            return
+
+        max_y, max_x = self.curses_pad.getmaxyx()
+        footer_y = max(0, max_y - 1)
+        rule_y = footer_y - 1
+        sidebar_right = 0
+        if self.channel_selector is not None:
+            sidebar_right = max(0, self.channel_selector.relx + self.channel_selector.width + 1)
+
+        footer_area_x = min(sidebar_right, max_x)
+        footer_area_width = max(0, max_x - footer_area_x)
+        footer_x = footer_area_x + max(0, (footer_area_width - len(self.SHORTCUTS_FOOTER)) // 2)
+        max_len = max(0, max_x - footer_x - 1)
+
+        try:
+            if rule_y >= 0:
+                self.curses_pad.attron(curses.A_DIM)
+                if sidebar_right < max_x:
+                    self.curses_pad.hline(rule_y, sidebar_right, curses.ACS_HLINE, max_x - sidebar_right)
+                self.curses_pad.attroff(curses.A_DIM)
+            self.curses_pad.addnstr(footer_y, footer_x, self.SHORTCUTS_FOOTER, max_len, curses.A_REVERSE | curses.A_DIM)
+        except Exception:
+            pass
 
     def select_channel(self, ch):
         if ch is None:
